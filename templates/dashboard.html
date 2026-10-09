@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <title>OSRS Ultimate Profit Advisor</title>
+    <style>
+        body { background-color: #121212; color: #e0e0e0; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .badge { padding: 8px 12px; font-weight: bold; border-radius: 4px; font-size: 0.9rem; }
+        .bg-success { background-color: #2ecc71; color: #fff; }
+        .bg-warning { background-color: #f1c40f; color: #121212; }
+        .bg-danger { background-color: #e74c3c; color: #fff; }
+        .tabs { display: flex; list-style: none; padding: 0; margin-bottom: 20px; border-bottom: 2px solid #333; }
+        .tab-item { padding: 10px 20px; cursor: pointer; background-color: #222; margin-right: 5px; border: 1px solid #333; border-bottom: none; border-radius: 4px 4px 0 0; color: #b0b0b0; }
+        .tab-item.active { background-color: #0d6efd; color: #fff; border-color: #0d6efd; }
+        .card { background-color: #1e1e1e; border: 1px solid #2d2d2d; padding: 20px; border-radius: 6px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; }
+        .table th, .table td { padding: 12px; border-bottom: 1px solid #333; }
+        .table th { background-color: #151515; color: #aaa; }
+        .table tr:hover { background-color: #252525; }
+        .profit-pos { color: #2ecc71; font-weight: bold; }
+        .profit-neg { color: #e74c3c; font-weight: bold; }
+        .recept-klik { cursor: pointer; color: #3498db; text-decoration: underline; }
+        .recept-klik:hover { color: #2980b9; }
+        .navodila-row { background-color: #1a1a1a; font-size: 0.9rem; color: #bbb; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>⚔️ OSRS Ultimate Real-Time Profit Analytics</h2>
+        <span id="status" class="badge bg-success">Auto-Osveževanje: Aktivno</span>
+    </div>
+    <ul class="tabs">
+        <li class="tab-item active" onclick="preklopiZavihek(event, 'sec-smithing')">⚒️ Smithing</li>
+        <li class="tab-item" onclick="preklopiZavihek(event, 'sec-decanting')">🧪 Decanting</li>
+        <li class="tab-item" onclick="preklopiZavihek(event, 'sec-crushing')">🪵 Crushing</li>
+        <li class="tab-item" onclick="preklopiZavihek(event, 'sec-fletching')">🏹 Fletching</li>
+        <li class="tab-item" onclick="preklopiZavihek(event, 'sec-herblore')">🌿 Herblore</li>
+        <li class="tab-item" onclick="preklopiZavihek(event, 'sec-ostalo')">🔮 Magic/Cooking/Crafting</li>
+    </ul>
+    <div class="card">
+        <div id="sec-smithing" class="tab-content active"><table class="table"><thead><tr><th>Recept (klikni za navodila)</th><th>Strošek</th><th>Prihodek</th><th>Profit</th></tr></thead><tbody id="data-smithing"></tbody></table></div>
+        <div id="sec-decanting" class="tab-content"><table class="table"><thead><tr><th>Recept (klikni za navodila)</th><th>Strošek</th><th>Prihodek</th><th>Profit</th></tr></thead><tbody id="data-decanting"></tbody></table></div>
+        <div id="sec-crushing" class="tab-content"><table class="table"><thead><tr><th>Recept (klikni za navodila)</th><th>Strošek</th><th>Prihodek</th><th>Profit</th></tr></thead><tbody id="data-crushing"></tbody></table></div>
+        <div id="sec-fletching" class="tab-content"><table class="table"><thead><tr><th>Recept (klikni za navodila)</th><th>Strošek</th><th>Prihodek</th><th>Profit</th></tr></thead><tbody id="data-fletching"></tbody></table></div>
+        <div id="sec-herblore" class="tab-content"><table class="table"><thead><tr><th>Recept (klikni za navodila)</th><th>Strošek</th><th>Prihodek</th><th>Profit</th></tr></thead><tbody id="data-herblore"></tbody></table></div>
+        <div id="sec-ostalo" class="tab-content"><table class="table"><thead><tr><th>Recept (klikni za navodila)</th><th>Strošek</th><th>Prihodek</th><th>Profit</th></tr></thead><tbody id="data-ostalo"></tbody></table></div>
+    </div>
+</div>
+<script>
+    const NAVODILA = {
+        "Steel Bar (Blast Furnace)": "Keldagrim Blast Furnace. Vzemi 1 Iron Ore in 1 Coal. Poberi palice s tekočega traku z Ice gauntlets.",
+        "Mithril Bar (Blast Furnace)": "Keldagrim Blast Furnace. Za vsako rudo potrebuješ 2 Coal. Uporabi Coal Bag.",
+        "Adamant Bar (Blast Furnace)": "Keldagrim Blast Furnace. Za vsako rudo potrebuješ 3 Coal. Coal Bag prinaša večjo hitrost.",
+        "Runite Bar (Blast Furnace)": "Keldagrim Blast Furnace. Za vsako rudo potrebuješ 4 Coal. Najvišji Smithing profit.",
+        "Cannonballs (AFK)": "Vzemi Steel bars in Ammo mould v inventar. Klikni na peč (Furnace). Zelo dolga in sproščujoča AFK metoda.",
+        "Decant Super restore (1->4)": "Kupi Super restore (1) na Grand Exchangeu. Pojdi do NPC Bob Barter na GE, klikni nanj in izberi možnost 'Decant' za brezplačno pretakanje.",
+        "Decant Saradomin brew (1->4)": "Kupi Saradomin brew (1) na GE. Bob Barter na severozahodu GE jih brezplačno pretoči v polne (4) stekleničke.",
+        "Decant Stamina potion (1->4)": "Kupi Stamina potion (1). Združi jih pri Bob Barterju v polne odmerke (4) in preprodaj.",
+        "Decant Super combat potion (1->4)": "Kupi Super combat (1). Bob Barter ti jih pretoči v polne (4). Odlično za flipping.",
+        "Decant Prayer potion (1->4)": "Kupi Prayer potion (1). Bob Barter na GE ti jih takoj in brezplačno združi v polne Prayer potion (4).",
+        "Crush Chocolate Bar": "Kupi Chocolate bars. Uporabi Pestle and Mortar na čokoladi, da ročno ustvariš Chocolate dust.",
+        "Crush Bird's Nest": "Uporabi Pestle and Mortar na praznem ptičjem gnezdu, da dobiš Crushed bird's nest za Saradomin Brews.",
+        "Crush Dragon Bones": "Drobi Superior dragon bones s Pestle and Mortar orodjem, da ustvariš Herblore sekundarni material.",
+        "Cut Yew Longbow": "Vzemi Yew logs in Knife v inventar. Klikni na les in izreži Yew longbow (u). Zelo sproščujoča metoda za urjenje Fletchinga.",
+        "String Yew Longbow": "Vzemi Yew longbow (u) in Bow string v razmerju 1:1, da sestaviš dokončan lok.",
+        "Cut Magic Longbow": "Uporabi Knife na Magic logs, da izrežeš Magic longbow (u) za visok Fletching XP.",
+        "String Magic Longbow": "Dodaj Bow string na Magic longbow (u), da dokončaš lok za takojšnjo prodajo ali High Alch.",
+        "Prayer Potion (4)": "Vstavi Ranarr weed in Snape grass v Vial of water. Zahteva ustrezno Herblore stopnjo.",
+        "Clean Ranarr Weed": "Ročno klikaj in čisti umazana zelišča (Grimy ranarr weed) v inventarju za hiter dobiček.",
+        "Clean Snapdragon": "Čisti Grimy snapdragon za hitre Herblore točke in takojšnjo preprodajo.",
+        "High Alch: Onyx bolts (e)": "Uporabi magijo High Alchemy na Onyx bolts (e). Potrebuješ Nature rune. Vsak klik vrne fiksno 9,000 gp.",
+        "Cook Shark": "Kuhaj na Hosidius štedilniku. Uporabi Cooking gauntlets, da zmanjšaš možnost zažganih rib.",
+        "Cook Karambwan": "Kuhanje Karambwanov nima časovnega zamika (t.i. 1-tick cooking), če ročno in hitro klikaš na štedilnik.",
+        "Craft Black D'hide Body": "Uporabi Needle in Thread na 3 kosih Black dragonhide materiala za hiter Crafting profit."
+    };
+
+    function fk(n) { return Math.round(n).toLocaleString('en-US') + " gp"; }
+
+    function preklopiZavihek(evt, zavihekId) {
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        document.querySelectorAll('.tab-item').forEach(ti => ti.classList.remove('active'));
+        document.getElementById(zavihekId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+
+    function toggleNavodila(rowId, imeRecepta) {
+        const obstojeca = document.getElementById(rowId);
+        if (obstojeca) {
+            obstojeca.remove();
+        } else {
+            const tekst = NAVODILA[imeRecepta] || "Navodila še niso vpisana.";
+            const starRow = document.querySelector(`[data-name="${imeRecepta}"]`);
+            if (starRow) {
+                const newRow = document.createElement('tr');
+                newRow.id = rowId;
+                newRow.className = "navodila-row";
+                newRow.innerHTML = '<td colspan="4">ℹ️ <strong>Navodila za igro:</strong> ' + tekst + '</td>';
+                starRow.parentNode.insertBefore(newRow, starRow.nextSibling);
+            }
+        }
+    }
+
+    function osveziTabelo(id, seznam) {
+        const tbody = document.getElementById(id);
+        tbody.innerHTML = "";
+        if(!seznam || seznam.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#aaa;'>Trenutno ni podatkov.</td></tr>";
+            return;
+        }
+        seznam.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-name', item.ime);
+            const cl = item.profit >= 0 ? "profit-pos" : "profit-neg";
+            const unikatenId = "navodila-" + id + "-" + index;
+            tr.innerHTML = '<td class="recept-klik" onclick="toggleNavodila(\'' + unikatenId + '\', \'' + item.ime + '\')">➡️ ' + item.ime + '</td>' +
+                           '<td>' + fk(item.strosek) + '</td>' +
+                           '<td>' + fk(item.prihod) + '</td>' +
+                           '<td class="' + cl + '">' + fk(item.profit) + '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function nalozi() {
+        const st = document.getElementById('status');
+        st.textContent = "Osveževanje...";
+        st.className = "badge bg-warning";
+        fetch('/api/data')
+            .then(res => res.json())
+            .then(data => {
+                osveziTabelo('data-smithing', data.smithing);
+                osveziTabelo('data-decanting', data.decanting);
+osveziTabelo('data-crushing', data.crushing);
+osveziTabelo('data-fletching', data.fletching);
+osveziTabelo('data-herblore', data.herblore);
+osveziTabelo('data-ostalo', data.ostalo);
+const d = new Date();
+st.textContent = "Osveženo: " + d.toLocaleTimeString();
+st.className = "badge bg-success";
+})
+.catch(() => {
+st.textContent = "Napaka povezave";
+st.className = "badge bg-danger";
+});
+}
+nalozi();
+setInterval(nalozi, 60000);
+
+
